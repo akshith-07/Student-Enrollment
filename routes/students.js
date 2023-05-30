@@ -29,18 +29,60 @@ router.post("/", async (req, res) => {
 });
 
 //GET STUDENTS BY ID
-router.get("/:id", (req, res) => {
-  res.send(`Displaying student with id ${req.params.id}`);
+router.get("/:id", getStudent, (req, res) => {
+  try {
+    res.status(200).json(res.student);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 //UPDATE STUDENT
-router.patch("/:id", (req, res) => {
-  res.send(`Updating student with id ${req.params.id}`);
+router.patch("/:id", getStudent, async (req, res) => {
+  if (req.body.name != null) {
+    res.student.name = req.body.name;
+  }
+  if (req.body.enrolledDepartment != null) {
+    res.student.enrolledDepartment = req.body.enrolledDepartment;
+  }
+  if (req.body.enrollmentDate != null) {
+    res.student.enrollmentDate = req.body.enrollmentDate;
+  }
+
+  try {
+    const updatedStudent = await res.student.save();
+    res.status(201).json(updatedStudent);
+  } catch (error) {
+    res.status(401).json({ message: error.message });
+  }
 });
 
 //DELETE STUDENTS
-router.delete("/:id", (req, res) => {
-  res.send(`Deleting student with id ${req.params.id}`);
+router.delete("/:id", getStudent, async (req, res) => {
+  try {
+    await res.student.deleteOne();
+    res
+      .status(200)
+      .json({ message: `Deleted user with the name ${res.student.name}` });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
+
+async function getStudent(req, res, next) {
+  let student;
+  try {
+    student = await studentsModel.findById(req.params.id);
+    if (student == null) {
+      return res
+        .status(404)
+        .json({ message: `cannot find user with the id ${req.params.id}` });
+    }
+  } catch (error) {
+    return response.status(500).json({ message: error.message });
+  }
+  res.student = student;
+  next();
+}
 
 module.exports = router;
